@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+abort 'No travis config found' unless File.exists?('.travis.yml')
+require 'yaml'
+config = YAML.load_file '.travis.yml'
+
+abort 'No ruby versions specified' unless config['rvm']
+
+if config['before_install']
+  puts "Running before_install..."
+  system config['before_install']
+end
+
+rubies = config['rvm']
+# TODO: translate rvm rubies to rbenv
+rubies = ['1.9.2-p290', '1.9.3-p0']
+
+results = rubies.map do |ruby|
+  ENV['RBENV_VERSION'] = ruby
+
+  # TODO: install
+  # system "Running install..."
+  # system 'bundle install --path vendor'
+
+  result = system(config['script'] || 'bundle exec rake')
+  [ruby, result]
+end
+
+puts "", "RESULTS", "*******"
+results.each do |ruby, result|
+  puts "#{ruby}: #{result ? 'SUCCESS' : 'FAILURE'}"
+end
+
+# TODO: cleanup bundler
