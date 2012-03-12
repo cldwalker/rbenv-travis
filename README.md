@@ -22,6 +22,10 @@ Run tests for ruby project in current directory based on its .travis.yml. Obviou
     1.9.3-p0:   SUCCESS
 
 
+## TODO
+
+* Actually get this to work without hardcoded rubies.
+
 ## Credits
 
 Got this started thanks to awesome @relevance fridays.
