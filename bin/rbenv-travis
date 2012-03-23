@@ -45,7 +45,7 @@ results = rbenv_rubies.map do |ruby, env|
   env.each {|k,v| ENV[k] = v }
 
   system "Running install..."
-  system 'bundle install --path vendor'
+  system 'bundle install --path bundle'
 
   puts "Running tests for #{ruby}..."
   cmd = config['script'] || 'rake'
