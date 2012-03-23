@@ -1,17 +1,17 @@
 ## Description
 
-Run tests for ruby project in current directory based on its .travis.yml,
-translating rvm rubies to rbenv equivalents.  Assumes you have git and are
+Run tests locally for your ruby project based on its .travis.yml,
+translating rvm rubies to rbenv equivalents. Assumes you have git and are
 running on a clean git repository.
 
 ## Install
 
-  $ mkdir -p ~/.rbenv/plugins
-  $ cd ~/.rbenv/plugins
-  $ git clone git://github.com/cldwalker/rbenv-travis.git
+    $ mkdir -p ~/.rbenv/plugins
+    $ cd ~/.rbenv/plugins
+    $ git clone git://github.com/cldwalker/rbenv-travis.git
 
-  # Ping me if you'd like me to gemify this project
-  # $ gem install rbenv-travis
+    # Ping me if you'd like me to gemify this project
+    # $ gem install rbenv-travis
 
 ## Usage
 
