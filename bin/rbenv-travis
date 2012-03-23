@@ -6,10 +6,18 @@ require 'yaml'
 config = YAML.load_file '.travis.yml'
 abort 'No ruby versions specified' if Array(config['rvm']).empty?
 
+# verbose flag
+@verbose = ARGV.delete('-v') || ARGV.delete('--verbose')
+
+def say(msg)
+  return unless @verbose
+  puts msg
+end
+
 def ensure_bundler
   # don't use `which` since rbenv interferes if installed on one ruby version
   if `bundle 2>&1`[/command not found/]
-    puts "Installing bundler..."
+    say "Installing bundler..."
     system 'gem install bundler'
   end
 end
@@ -34,7 +42,7 @@ end
 
 # Run this once since we're not cleaning the repo between test runs
 if config['before_install']
-  puts "Running before_install..."
+  say "Running before_install..."
   ensure_bundler if config['before_install'].start_with?('bundle')
   system config['before_install']
 end
@@ -44,8 +52,10 @@ results = rbenv_rubies.map do |ruby, env|
   ENV['RBENV_VERSION'] = ruby
   env.each {|k,v| ENV[k] = v }
 
-  system "Running install..."
-  system 'bundle install --path bundle'
+  say "Running install..."
+  install_cmd = 'bundle install --path bundle'
+  install_cmd << ' --quiet' unless @verbose
+  system install_cmd
 
   puts "Running tests for #{ruby}..."
   cmd = config['script'] || 'rake'
@@ -58,10 +68,9 @@ puts "", "RESULTS", "*******"
 results.each do |ruby, result|
   puts "#{ruby}: #{result ? 'SUCCESS' : 'FAILURE'}"
 end
-puts ""
 
 # cleanup bundler + anything else
-puts "Cleaning up git repo:"
-system('git clean -fd')
+say "\nCleaning up git repo:"
+system('git clean -fd' + (@verbose ? '' : ' -q'))
 
 exit 1 unless results.all? {|arr| arr[1] }
