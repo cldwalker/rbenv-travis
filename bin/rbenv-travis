@@ -6,22 +6,43 @@ config = YAML.load_file '.travis.yml'
 
 abort 'No ruby versions specified' unless config['rvm']
 
+# Run this once since we're not cleaning the repo between test runs
 if config['before_install']
   puts "Running before_install..."
+  if config['before_install'][/^bundle/] && `bundle 2>&1`[/command not found/]
+    puts "Installing bundler..."
+    system 'gem install bundler && rbenv rehash'
+  end
   system config['before_install']
 end
 
 rubies = config['rvm']
-# TODO: translate rvm rubies to rbenv
-rubies = ['1.9.2-p290', '1.9.3-p0']
+rbenv_versions = `rbenv versions --bare`.split("\n")
+rbenv_rubies = rubies.map {|ruby|
+  ruby_type = ruby[/[^-]+/]
+  new_rubies = rbenv_versions.select {|e| e.start_with?(ruby_type) }.sort
+  env = {}
+  if ruby.start_with?('jruby')
+    new_rubies.delete_if {|e| e.end_with?('-dev') } # not used by rvm
+    env['JRUBY_OPTS'] = ruby.end_with?('-19mode') ? '--1.9' : ''
+  elsif ruby.start_with?('rbx')
+    env['RBXOPT'] = ruby.end_with?('-19mode') ? '-X19' : ''
+  end
+  new_ruby = new_rubies.last
+  abort "No rbenv ruby found for ruby '#{ruby}'" unless new_ruby
+  [new_ruby, env]
+}
+# rubies = ['1.9.2-p290', '1.9.3-p0']
 
-results = rubies.map do |ruby|
+results = rbenv_rubies.map do |ruby, env|
   ENV['RBENV_VERSION'] = ruby
+  env.each {|k,v| ENV[k] = v }
 
   # TODO: install
   # system "Running install..."
   # system 'bundle install --path vendor'
 
+  puts "Running tests for #{ruby}..."
   result = system(config['script'] || 'bundle exec rake')
   [ruby, result]
 end
