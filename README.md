@@ -15,7 +15,7 @@ running on a clean git repository.
 
 ## Usage
 
-    $ rbenv travis
+    $ rbenv travis && echo WOOT
     Running before_install...
     Writing new Gemfile to /Users/me/code/gems/boson/Gemfile
     ......................................................................................................................................................................................
@@ -31,13 +31,15 @@ running on a clean git repository.
     *******
     1.9.2-p290: SUCCESS
     1.9.3-p0:   SUCCESS
+    WOOT
 
 ## About
 
 rbenv-travis uses bundler to isolate gem dependencies from the rest of your system. If
 you don't have bundler installed, bundler will be installed. Since rbenv-travis stores
 gems locally to bundle/, gitignore bundle/ to speed up installs between runs. After
-tests are run, a report is printed and your git repo is cleaned.
+tests are run, a report is printed, your git repo is cleaned and exits cleanly only if all
+tests pass.
 
 ## Todo
 

@@ -4,7 +4,7 @@ abort "git repo is not clean" if `git status`[/Untracked files/]
 abort 'No travis config found' unless File.exists?('.travis.yml')
 require 'yaml'
 config = YAML.load_file '.travis.yml'
-abort 'No ruby versions specified' unless config['rvm']
+abort 'No ruby versions specified' if Array(config['rvm']).empty?
 
 def ensure_bundler
   # don't use `which` since rbenv interferes if installed on one ruby version
@@ -63,3 +63,5 @@ puts ""
 # cleanup bundler + anything else
 puts "Cleaning up git repo:"
 system('git clean -fd')
+
+exit 1 unless results.all? {|arr| arr[1] }
