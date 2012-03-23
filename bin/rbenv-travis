@@ -1,49 +1,56 @@
 #!/usr/bin/env ruby
 
+abort "git repo is not clean" if `git status`[/Untracked files/]
 abort 'No travis config found' unless File.exists?('.travis.yml')
 require 'yaml'
 config = YAML.load_file '.travis.yml'
-
 abort 'No ruby versions specified' unless config['rvm']
+
+def ensure_bundler
+  # don't use `which` since rbenv interferes if installed on one ruby version
+  if `bundle 2>&1`[/command not found/]
+    puts "Installing bundler..."
+    system 'gem install bundler'
+  end
+end
+
+def to_rbenv_rubies(rubies)
+  rbenv_versions = `rbenv versions --bare`.split("\n")
+  rubies.map do |ruby|
+    ruby_type = ruby[/[^-]+/]
+    new_rubies = rbenv_versions.select {|e| e.start_with?(ruby_type) }.sort
+    env = {}
+    if ruby.start_with?('jruby')
+      new_rubies.delete_if {|e| e.end_with?('-dev') } # not used by rvm
+      env['JRUBY_OPTS'] = ruby.end_with?('-19mode') ? '--1.9' : ''
+    elsif ruby.start_with?('rbx')
+      env['RBXOPT'] = ruby.end_with?('-19mode') ? '-X19' : ''
+    end
+    new_ruby = new_rubies.last
+    abort "No rbenv ruby found for ruby '#{ruby}'" unless new_ruby
+    [new_ruby, env]
+  end
+end
 
 # Run this once since we're not cleaning the repo between test runs
 if config['before_install']
   puts "Running before_install..."
-  if config['before_install'][/^bundle/] && `bundle 2>&1`[/command not found/]
-    puts "Installing bundler..."
-    system 'gem install bundler && rbenv rehash'
-  end
+  ensure_bundler if config['before_install'].start_with?('bundle')
   system config['before_install']
 end
 
-rubies = config['rvm']
-rbenv_versions = `rbenv versions --bare`.split("\n")
-rbenv_rubies = rubies.map {|ruby|
-  ruby_type = ruby[/[^-]+/]
-  new_rubies = rbenv_versions.select {|e| e.start_with?(ruby_type) }.sort
-  env = {}
-  if ruby.start_with?('jruby')
-    new_rubies.delete_if {|e| e.end_with?('-dev') } # not used by rvm
-    env['JRUBY_OPTS'] = ruby.end_with?('-19mode') ? '--1.9' : ''
-  elsif ruby.start_with?('rbx')
-    env['RBXOPT'] = ruby.end_with?('-19mode') ? '-X19' : ''
-  end
-  new_ruby = new_rubies.last
-  abort "No rbenv ruby found for ruby '#{ruby}'" unless new_ruby
-  [new_ruby, env]
-}
-# rubies = ['1.9.2-p290', '1.9.3-p0']
-
+rbenv_rubies = to_rbenv_rubies config['rvm']
 results = rbenv_rubies.map do |ruby, env|
   ENV['RBENV_VERSION'] = ruby
   env.each {|k,v| ENV[k] = v }
 
-  # TODO: install
-  # system "Running install..."
-  # system 'bundle install --path vendor'
+  system "Running install..."
+  system 'bundle install --path vendor'
 
   puts "Running tests for #{ruby}..."
-  result = system(config['script'] || 'bundle exec rake')
+  cmd = config['script'] || 'rake'
+  cmd = "bundle exec #{cmd}" unless cmd.start_with?('bundle')
+  result = system(cmd)
   [ruby, result]
 end
 
@@ -51,5 +58,8 @@ puts "", "RESULTS", "*******"
 results.each do |ruby, result|
   puts "#{ruby}: #{result ? 'SUCCESS' : 'FAILURE'}"
 end
+puts ""
 
-# TODO: cleanup bundler
+# cleanup bundler + anything else
+puts "Cleaning up git repo:"
+system('git clean -fd')
