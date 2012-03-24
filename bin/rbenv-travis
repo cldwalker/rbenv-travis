@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+#/ usage: rbenv travis [--verbose]
+#/
+#/ Runs travis tests for current travis.yml.
 
 abort "git repo is not clean" if `git status`[/Untracked files/]
 abort 'No travis config found' unless File.exists?('.travis.yml')
