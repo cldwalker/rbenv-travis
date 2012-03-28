@@ -3,7 +3,7 @@
 #/
 #/ Runs travis tests for current travis.yml.
 
-abort "git repo is not clean" if `git status`[/Untracked files/]
+abort "git repo is not clean" unless `git status`[/working directory clean/]
 abort 'No travis config found' unless File.exists?('.travis.yml')
 require 'yaml'
 config = YAML.load_file '.travis.yml'
