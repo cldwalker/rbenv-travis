@@ -43,17 +43,23 @@ def to_rbenv_rubies(rubies)
   end
 end
 
-# Run this once since we're not cleaning the repo between test runs
-if config['before_install']
-  say "Running before_install..."
-  ensure_bundler if config['before_install'].start_with?('bundle')
-  system config['before_install']
+def run_state(state, config)
+  if config[state]
+    say "Running #{state}..."
+    ensure_bundler if config[state].start_with?('bundle')
+    system config[state]
+  end
 end
+
+# Run this once since we're not cleaning the repo between test runs
+run_state 'before_install', config
 
 rbenv_rubies = to_rbenv_rubies config['rvm']
 results = rbenv_rubies.map do |ruby, env|
   ENV['RBENV_VERSION'] = ruby
   env.each {|k,v| ENV[k] = v }
+
+  run_state 'before_script', config
 
   say "Running install..."
   install_cmd = 'bundle install --path bundle'
